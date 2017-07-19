@@ -1,0 +1,87 @@
+//KAPLIA JOB NOTIFY=YKAPLIA                                             00030004
+//DELETE  EXEC PGM=IEFBR14                                              00031011
+//DELETE  DD DISP=(MOD,DELETE),DSN=YKAPLIA.MYTEST,SPACE=(TRK,1)         00032011
+//COMPL   EXEC PROC=ASMACLG                                             00040000
+//C.SYSIN DD *                                                          00050000
+TEST      CSECT                                                         00050100
+          USING *,R12                                                   00050400
+          STM   R14,R12,12(R13)                                         00050500
+          LR    R12,R15                                                 00050600
+          LR    R10,R13                                                 00050800
+          LA    13,SAVEAREA                                             00050900
+          ST    R10,4(,R13)                                             00051000
+          ST    R13,8(,R10) 
+-----------------------------------------------------------------------
+											__________________________					
+          AP    DBL2,DBL1                  /      __   __             \ 
+          UNPK  FIELD3,DBL2                |  /| |  \ |  \            |
+          OI    FIELD3+3,X'F0'             | /-| |  | |  |            | 
+                                           |/  | |__/ |__/            | 
+                                           \__________________________/ 
+          									(only decimal numbers)
+--------------------------------------------
+											(use registers)
+          CVB   R2,DBL1             *compare second operand to binary and remeber in 1st operand                                        
+          CVB   R3,DBL2             *-//-                                    
+          AR    R2,R3               *add from first and remeber in 1st operand                                    
+          CVD   R2,DBL2             *compare data from 1st operand from binary to decimal & remember in 2nd operand                                    
+          UNPK  FIELD3,DBL2         *unpack 2nd operand in first operand(zone format)                                    
+          OI    FIELD3+3,X'F0'      *convert 4th symbol from 1st operand choosing right zone for display decimal
+  
+----------------------------------------------------------------------
+	  *******   *		*  *********
+	 * 		*	*		*  *        *
+	 *			*		*  *		*
+	 *******	*		*  *********
+	 		*	*		*  *        *
+ 			*	*		*  *		*
+			*	*		*  *		*
+	********	 *******   *********
+--------------------------------------------
+											(use registers)
+          CVB   R2,DBL1             *compare second operand to binary and remeber in 1st operand                                    
+          CVB   R3,DBL2             *-//-                                    
+          SR    R2,R3               *substract from first and remeber in 1st operand                                    
+          CVD   R2,DBL2             *compare data from 1st operand from binary to decimal & remember in 2nd operand                                   	
+          UNPK  FIELD3,DBL2         *unpack 2nd operand in first operand(zone format)                                   
+          OI    FIELD3+3,X'F0'      *convert 4th symbol from 1st operand choosing right zone for display decimal
+  
+----------------------------------------------------------------------
+DSA       OPEN  (OUT,(OUTPUT))                                          00053200
+          PUT   OUT,FIELD3                                              00053311
+          CLOSE (OUT)                                                   00053400
+ASD       LR    R13,R10                                                 00053500
+          L     R14,12(,R13)                                            00053600
+          LA    R15,0                                                   00053700
+          LM    R0,R12,20(R13)                                          00053800
+          BR    R14                                                     00053900
+SAVEAREA  DS   18F                                                      00054000
+DBL1      DC   PL8'9'                                                   00054111
+DBL2      DC   PL8'3'                                                   00054211
+DBL3      DS   PL8                                                      00054311
+FIELD3    DS   ZL4                                                      00054411
+STRING    DS   CL4                                                      00054507
+OUT       DCB  DDNAME=OUTPUTDD,MACRF=PM,RECFM=F,DSORG=PS                00054600
+R0        EQU  0                                                        00054700
+R1        EQU  1                                                        00054800
+R2        EQU  2                                                        00054900
+R3        EQU  3                                                        00055000
+R4        EQU  4                                                        00055100
+R5        EQU  5                                                        00055200
+R6        EQU  6                                                        00055300
+R7        EQU  7                                                        00055400
+R8        EQU  8                                                        00055500
+R9        EQU  9                                                        00055600
+R10       EQU  10                                                       00055700
+R11       EQU  11                                                       00055800
+R12       EQU  12                                                       00055900
+R13       EQU  13                                                       00056000
+R14       EQU  14                                                       00056100
+R15       EQU  15                                                       00056200
+          DROP R12                                                      00056300
+       END                                                              00056400
+                                                                        00056511
+//G.OUTPUTDD  DD DSN=YKAPLIA.MYTEST,DISP=(NEW,CATLG,DELETE),            00056711
+//            DCB=(LRECL=10,DSORG=PS,RECFM=F),SPACE=(TRK,(1,1))         00057011
+/*                                                                      00060000
+

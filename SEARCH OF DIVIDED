@@ -1,0 +1,85 @@
+//KAPLIA  JOB NOTIFY=YKAPLIA                                            00030000
+//DELETE  EXEC PGM=IEFBR14                                              00031000
+//DELETE  DD DISP=(MOD,DELETE),DSN=YKAPLIA.MYTEST,SPACE=(TRK,1)         00032000
+//COMPL   EXEC PROC=ASMACLG                                             00040000
+//C.SYSIN DD *                                                          00050000
+TEST      CSECT                                                         00050100
+          USING *,R12                                                   00050400
+          STM   R14,R12,12(R13)                                         00050500
+          LR    R12,R15                                                 00050600
+          LR    R10,R13                                                 00050800
+          LA    13,SAVEAREA                                             00050900
+          ST    R10,4(,R13)                                             00051000
+          ST    R13,8(,R10)                                             00051100
+          OPEN  (OUT,(OUTPUT))                                          00051200
+          LA    R8,0             SET START ITERATOR                     00051311
+          LA    R7,4             FINISH ITERATOR                        00051411
+          LA    R2,MASS-4        SET POINT IN START-4 STRING            00051611
+***START***                                                             00051711
+COMP      CR    R8,R7            COMPARE ITERATOR                       00052211
+          BC    8,DSA            GO TO FINISH                           00052308
+* * * * * * * * * * * * * * * * * * * * * * *                           00052411
+*  READ STRING AND CHECK BALANCE OF NUMBER  *                           00052511
+* * * * * * * * * * * * * * * * * * * * * * *                           00052611
+READ      LA    R2,4(R2)         SET POINT ON A START STRING            00052711
+          SR    R5,R5            CLEAN REGISTERS                        00052811
+          SR    R4,R4            -//-                                   00052911
+          L     R5,0(,R2)        LOAD ELEMENT FROM STRING               00053011
+          LPR   R5,R5            SET POSITIVE NUMBER                    00053111
+          D     R4,DIVSR         DIVIDE NUMBER                          00053211
+          C     R4,ZERO          CHECK BALANCE OF NUMBER                00053311
+          BC    8,WRITE          GO TO WRITE                            00053411
+          LA    R8,1(R8)         SET NEW STEP IN ITERATOR               00053511
+          BC    15,COMP          GO TO COMP                             00053611
+WRITE     L     R9,0(,R2)        WRITE RIGHT ELEMENT                    00054011
+          BC    15,FINISH        GO TO FINISH                           00055011
+SETMIN    MVI   FIELD3+0,X'60'   SET MINUS IF IT NEED                   00056311
+          PUT   OUT,FIELD3                                              00056410
+          BC    15,COMP          GO TO DSA                              00056508
+FINISH    CVD   R9,MAXI          CONVERT TO DECIMAL                     00056611
+          UNPK  FIELD3(4),MAXI   MAXI+4    UNPACK BINARY                00056711
+          OI    FIELD3+3,X'F0'                                          00056910
+          LA    R8,1(R8)                                                00057108
+          TM    MAXI+7,X'0D'     COMPARE ZONE SPACE ON MINUS            00057211
+          BC    1,SETMIN         GO TO SETMIN                           00057311
+          PUT   OUT,FIELD3                                              00057510
+          BC    15,COMP                                                 00057608
+*DSA       PUT   OUT,FIELD3                                             00057710
+DSA       CLOSE (OUT)                                                   00057810
+ASD       LR    R13,R10                                                 00057900
+          L     R14,12(,R13)                                            00058000
+          LA    R15,0                                                   00058100
+          LM    R0,R12,20(R13)                                          00058200
+          BR    R14                                                     00058300
+SAVEAREA  DS    18F                                                     00058400
+FIELD3    DS    CL16                                                    00058510
+MAXI      DC    PL8'0'                                                  00058610
+ZERO      DC    F'0'                                                    00058708
+MASS      DC    F'-21,-42,1,18'                                         00058810
+SETSIGN   DC    F'0'                                                    00058908
+DIVSR     DC    F'3'                                                    00059010
+REMDR     DC    F'0'                                                    00059108
+ANSR      DC    F'0'                                                    00059208
+OUT       DCB  DDNAME=OUTPUTDD,MACRF=PM,RECFM=F,DSORG=PS                00059300
+R0        EQU  0                                                        00059400
+R1        EQU  1                                                        00059500
+R2        EQU  2                                                        00059600
+R3        EQU  3                                                        00059700
+R4        EQU  4                                                        00059800
+R5        EQU  5                                                        00059900
+R6        EQU  6                                                        00060000
+R7        EQU  7                                                        00060100
+R8        EQU  8                                                        00060200
+R9        EQU  9                                                        00060300
+R10       EQU  10                                                       00060400
+R11       EQU  11                                                       00060500
+R12       EQU  12                                                       00060600
+R13       EQU  13                                                       00060700
+R14       EQU  14                                                       00060800
+R15       EQU  15                                                       00060900
+          DROP R12                                                      00061000
+       END                                                              00061100
+//G.OUTPUTDD  DD DSN=YKAPLIA.MYTEST,DISP=(NEW,CATLG,DELETE),            00061200
+//            DCB=(BLKSIZE=23,DSORG=PS,RECFM=U),SPACE=(TRK,(1,1))       00062000
+/*                                                                      00070000
+

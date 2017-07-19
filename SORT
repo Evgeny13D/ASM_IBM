@@ -1,0 +1,91 @@
+//SORTMAS JOB NOTIFY=YKAPLIA
+//DELETE EXEC PGM=IEFBR14
+//DELETE DD DISP=(MOD,DELETE),DSN=YKAPLIA.MYTEST,SPACE=(TRK,1)
+//COMPL EXEC PROC=ASMACLG
+//C.SYSIN DD *
+TEST     CSECT
+         USING   *,R12
+         STM     R14,R12,12(R13)
+         LR      R12,R15
+         LR      R10,R13
+         LA      R13,SAVEAREA
+         ST      R10,4(,R13)
+         ST      R13,8(,R10)     save registrs states in SAVEAREA
+         OPEN    (OUT,(OUTPUT))  OPEN OUTPUT FILE
+* CLEAR REGISTERS
+         SR      R2,R2
+         SR      R8,R8
+         SR      R10,R10
+* START OF LOAD DATA
+         LA      R9,ISTRING-4      LOAD ADRESS ISTRING
+         LA      R10,NSTRING-1     LOAD END OF ISTRING
+         LA      R7,NSTRING        LOAD FOR OUTPUT
+COMP1    LA      R9,4(R9)
+         CR      R9,R10            IF R8 => R10
+         BC      10,LOADOUT        GO TO SPAWN
+         LR      R4,R9             LOAD REGISTER FOR POINT
+         LR      R8,R9             LOAD REGISTER FOR MOVE
+         L       R2,0(,R8)         LOAD FIRST FOR COMPARE
+COMP     LA      R8,4(R8)          SHIFT R8 BY 4 BYTES
+         CR      R8,R10            IF R8 => R10
+         BC      10,SPAWN          GO TO SPAWN
+         C       R2,0(,R8)         IF R2 < NUMBER IN R8
+         BC      4,MAX             GO TO MAX
+         BC      15,COMP           ELSE GO TO COMP
+MAX      L       R2,0(,R8)         LOAD NUMBER FROM R8 TO R2
+         LR      R4,R8
+         BC      15,COMP           GO TO COMP
+SETMIN   MVI     0(R7),X'60'       PUT MINUS IN NSTRING BYTE
+         LA      R7,6(R7)          MOVE TO 6 BYTES
+         BC      15,FINISH         GO TO COMP2
+SPAWN    MVC     0(4,R4),0(R9)     MOVE MAX TO PRESENT ELEMENT
+         ST      R2,0(,R9)         MOVE PRESENT TO MAX
+         BC      15,COMP1          GO TO COMP1
+LOADOUT  LA      R9,ISTRING        SET POINT ON START STRING
+FINISH   CR      R9,R10            IF R8 => R10
+         BC      10,EOF            GO TO EOF
+         L       R2,0(,R9)          LOAD FIRST ELEMENT
+         CVD     R2,SETPACK        CONVERT R2 TO PACKED
+         UNPK    1(3,R7),SETPACK   UNPACKED  PACKED TO NSTRING+1
+         OI      3(R7),X'F0'       CHANGE LAST BYTE ZONE TO F
+         LA      R9,4(R9)          CHANGE LAST BYTE ZONE TO F
+         TM      SETPACK+7,X'0D'    TEST ZONE TO FIND SIGN
+         BC      1,SETMIN           IF C GO TO SETMIN SIGN
+         LA      R7,6(R7)           IF C GO TO SETMIN
+         BC      15,FINISH          GO TO FINISH
+EOF      PUT     OUT,NSTRING        WRITE TO FILE NSTRING
+         CLOSE  (OUT)               CLOSE FILE
+         L      R14,12(,R13)        CLEAR REGISTERS BACK...
+         LA     R15,0
+         LM     R0,R12,20(R13)
+         BR     R14
+SAVEAREA DS     18F
+R0       EQU    0
+R1       EQU    1
+R2       EQU    2
+R3       EQU    3
+R4       EQU    4
+R5       EQU    5
+R6       EQU    6
+R7       EQU    7
+R8       EQU    8
+R9       EQU    9
+R10      EQU    10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
+         DROP  R12
+ISTRING  DC    F'-8,0,13,-99'
+NSTRING  DS    CL80
+SETPACK  DC    PL8'0'
+TEST1    DC    80CL1'_'
+TEST2    DC    80CL1'B'
+TEST3    DC    80CL1'C'
+TEST4    DC    80CL1'D'
+OUT      DCB  DDNAME=OUTPUTDD,MACRF=PM,RECFM=U,DSORG=PS
+         END
+//G.OUTPUTDD  DD DSN=YKAPLIA.MYTEST,DISP=(NEW,CATLG),
+//  DCB=(BLKSIZE=80,DSORG=PS,RECFM=U),SPACE=(TRK,(1,1))
+
